@@ -370,7 +370,7 @@ def polygonToZone(polygon, board):
 
 def buildTabs(substrate: Substrate,
               partitionLines: Union[GeometryCollection, LineString],
-              tabAnnotations: Iterable[TabAnnotation], fillet: KiLength = 0) -> \
+              tabAnnotations: Iterable[TabAnnotation], fillet: KiLength = 0, interior=False) -> \
                 Tuple[List[Polygon], List[LineString]]:
     """
     Given substrate, partitionLines of the substrate and an iterable of tab
@@ -382,7 +382,7 @@ def buildTabs(substrate: Substrate,
     tabs, cuts = [], []
     for annotation in tabAnnotations:
         t, c = substrate.tab(annotation.origin, annotation.direction,
-            annotation.width, partitionLines, annotation.maxLength, fillet)
+            annotation.width, partitionLines, annotation.maxLength, fillet, interior)
         if t is not None:
             tabs.append(t)
             cuts.append(c)
@@ -1513,6 +1513,7 @@ class Panel:
         """
         tabs, cuts = [], []
         for s in self.substrates:
+            print("Sub:", s)
             t, c = buildTabs(s, s.partitionLine, s.annotations, fillet)
             tabs.extend(t)
             cuts.extend(c)
@@ -1557,6 +1558,8 @@ class Panel:
                         tWidth = widthFn(edge.length, dir)
                         tCount = countFn(edge.length, dir)
                         a = self._buildTabAnnotationForEdge(edge, dir, tCount, tWidth)
+                        for annot in a:
+                            print("Annot:", annot.origin, annot.width)
                         self.substrates[i].annotations.extend(a)
 
     def buildTabAnnotationsFixed(self, hcount, vcount, hwidth, vwidth,

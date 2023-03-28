@@ -1,4 +1,4 @@
-from shapely import geometry
+from shapely import geometry, get_interior_ring, get_num_interior_rings
 from shapely.geometry import (Polygon, MultiPolygon, LineString,
     MultiLineString, LinearRing, Point)
 from shapely.geometry.collection import GeometryCollection
@@ -613,7 +613,7 @@ class Substrate:
         return self.substrates.boundary
 
     def tab(self, origin, direction, width, partitionLine=None,
-               maxHeight=pcbnew.FromMM(50), fillet=0):
+               maxHeight=pcbnew.FromMM(50), fillet=0, interior=False):
         """
         Create a tab for the substrate. The tab starts at the specified origin
         (2D point) and tries to penetrate existing substrate in direction (a 2D
@@ -638,7 +638,11 @@ class Substrate:
             direction = np.around(normalize(direction), 4)
             sideOriginA = origin + makePerpendicular(direction) * width / 2
             sideOriginB = origin - makePerpendicular(direction) * width / 2
-            boundary = self.substrates.exterior
+            if interior:
+                ints = get_num_interior_rings(self.substrates)
+                boundary = max([get_interior_ring(self.substrates,i) for i in range(ints)], key=lambda x: x.length)
+            else:
+                boundary = self.substrates.exterior
             splitPointA = closestIntersectionPoint(sideOriginA, direction,
                 boundary, maxHeight)
             splitPointB = closestIntersectionPoint(sideOriginB, direction,
@@ -653,12 +657,16 @@ class Substrate:
             # individually.
             direction = -direction
             for p in listGeometries(partitionLine):
+                if interior:
+                    p = p.reverse()
                 try:
+                    print("trying: ", origin, maxHeight, width, partitionLine)
                     partitionSplitPointA = closestIntersectionPoint(splitPointA.coords[0],
                             direction, p, maxHeight)
                     partitionSplitPointB = closestIntersectionPoint(splitPointB.coords[0],
                             direction, p, maxHeight)
                 except NoIntersectionError: # We cannot span towards the partition line
+                    print("Fail origin: ", origin)
                     continue
                 if isLinestringCyclic(p):
                     candidates = [(partitionSplitPointA, partitionSplitPointB)]
@@ -869,9 +877,13 @@ class SubstratePartitionLines:
         def seedFilter(idA, idB, v, l):
             if l.length < SEED_LIMIT_SIZE:
                 return False
-            return idA not in ghosts or idB not in ghosts
+            return (idA not in ghosts) or (idB not in ghosts)
+        def ghostId(id):
+            return id in ghosts
+
+        
         self._partition = BoxPartitionLines(
-            boxes,
+            boxes, ghostId,
             seedFilter,
             safeHorizontalMargin, safeVerticalMargin)
 

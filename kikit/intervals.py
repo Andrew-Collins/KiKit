@@ -1,4 +1,5 @@
 from __future__ import annotations
+from ast import Call
 import typing
 from typing import Any, Dict, List, Optional, Union, Tuple, Callable, Iterable
 from kikit.typing import Box, T, ComparableT
@@ -326,7 +327,7 @@ def collectHardStops(boxes: Iterable[Box]) -> Tuple[List[AxialLine], List[AxialL
 def defaultSeedFilter(boxIdA: object, boxIdB: object, vertical: bool, seedline: AxialLine) -> bool:
     return True
 
-def collectSeedLines(boxes: Dict[object, Box], seedFilter: Callable[[object, object, bool, AxialLine], bool]) \
+def collectSeedLines(boxes: Dict[object, Box], seedFilter: Callable[[object, object, bool, AxialLine], bool], ghostId: [Callable[object], bool]) \
         -> Tuple[List[AxialLine], List[AxialLine]]:
     """
     Given a dictionary ident -> box return a list of all midlines between
@@ -343,25 +344,37 @@ def collectSeedLines(boxes: Dict[object, Box], seedFilter: Callable[[object, obj
     verlines: List[AxialLine] = []
     for identA, boxA in boxes.items():
         for identB, shadow in neighbors.leftC(identA):
-            mid = (boxA[0] + boxes[identB][2]) / 2
+            if ghostId(identB):
+                mid = boxes[identB][2]
+            else: 
+                mid = (boxA[0] + boxes[identB][2]) / 2
             candidates = [AxialLine(mid, e.min, e.max, identA)
                 for e in shadow.intervals]
             verlines.extend([x for x in candidates
                 if seedFilter(identA, identB, True, x)])
         for identB, shadow in neighbors.rightC(identA):
-            mid = (boxA[2] + boxes[identB][0]) / 2
+            if ghostId(identB):
+                mid = boxes[identB][0]
+            else: 
+                mid = (boxA[2] + boxes[identB][0]) / 2
             candidates = [AxialLine(mid, e.min, e.max, identA)
                 for e in shadow.intervals]
             verlines.extend([x for x in candidates
                 if seedFilter(identA, identB, True, x)])
         for identB, shadow in neighbors.topC(identA):
-            mid = (boxA[1] + boxes[identB][3]) / 2
+            if ghostId(identB):
+                mid = boxes[identB][3]
+            else: 
+                mid = (boxA[1] + boxes[identB][3]) / 2
             candidates = [AxialLine(mid, e.min, e.max, identA)
                 for e in shadow.intervals]
             horlines.extend([x for x in candidates
                 if seedFilter(identA, identB, False, x)])
         for identB, shadow in neighbors.bottomC(identA):
-            mid = (boxA[3] + boxes[identB][1]) / 2
+            if ghostId(identB):
+                mid = boxes[identB][1]
+            else: 
+                mid = (boxA[3] + boxes[identB][1]) / 2
             candidates = [AxialLine(mid, e.min, e.max, identA)
                 for e in shadow.intervals]
             horlines.extend([x for x in candidates
@@ -478,7 +491,7 @@ class BoxPartitionLines:
     +---+ | +----+   |   +----+
     """
 
-    def __init__(self, boxes: Dict[object, Box],
+    def __init__(self, boxes: Dict[object, Box], ghostId: Callable[[object], bool],
                  seedFilter: Callable[[object, object, bool, AxialLine], bool]=defaultSeedFilter,
                  safeHorizontalMargin: float=0, safeVerticalMargin: float=0) -> None:
         """
@@ -494,7 +507,8 @@ class BoxPartitionLines:
         hstops, vstops = collectHardStops(boxes.values())
         hSafeStops, vSafeStops = collectHardStops([
             shpBBoxExpand(x, safeVerticalMargin, safeHorizontalMargin) for x in boxes.values()])
-        hseeds, vseeds = collectSeedLines(boxes, seedFilter)
+
+        hseeds, vseeds = collectSeedLines(boxes, seedFilter, ghostId)
         hshadows = buildShadows(hseeds, chain(vstops, vSafeStops))
         vshadows = buildShadows(vseeds, chain(hstops, hSafeStops))
 

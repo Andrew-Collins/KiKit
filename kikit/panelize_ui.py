@@ -214,6 +214,7 @@ def panelize(input, output, preset, plugin, layout, source, tabs, cuts, framing,
             text3=text3, text4=text4, copperfill=copperfill, page=page,
             post=post, debug=debug)
 
+
         doPanelization(input, output, preset, plugin)
 
         if (dump):
