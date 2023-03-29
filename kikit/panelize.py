@@ -1513,7 +1513,6 @@ class Panel:
         """
         tabs, cuts = [], []
         for s in self.substrates:
-            print("Sub:", s)
             t, c = buildTabs(s, s.partitionLine, s.annotations, fillet)
             tabs.extend(t)
             cuts.extend(c)
@@ -1558,8 +1557,6 @@ class Panel:
                         tWidth = widthFn(edge.length, dir)
                         tCount = countFn(edge.length, dir)
                         a = self._buildTabAnnotationForEdge(edge, dir, tCount, tWidth)
-                        for annot in a:
-                            print("Annot:", annot.origin, annot.width)
                         self.substrates[i].annotations.extend(a)
 
     def buildTabAnnotationsFixed(self, hcount, vcount, hwidth, vwidth,

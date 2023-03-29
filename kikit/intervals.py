@@ -1,5 +1,4 @@
 from __future__ import annotations
-from ast import Call
 import typing
 from typing import Any, Dict, List, Optional, Union, Tuple, Callable, Iterable
 from kikit.typing import Box, T, ComparableT

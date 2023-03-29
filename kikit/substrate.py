@@ -660,13 +660,11 @@ class Substrate:
                 if interior:
                     p = p.reverse()
                 try:
-                    print("trying: ", origin, maxHeight, width, partitionLine)
                     partitionSplitPointA = closestIntersectionPoint(splitPointA.coords[0],
                             direction, p, maxHeight)
                     partitionSplitPointB = closestIntersectionPoint(splitPointB.coords[0],
                             direction, p, maxHeight)
                 except NoIntersectionError: # We cannot span towards the partition line
-                    print("Fail origin: ", origin)
                     continue
                 if isLinestringCyclic(p):
                     candidates = [(partitionSplitPointA, partitionSplitPointB)]
@@ -877,7 +875,7 @@ class SubstratePartitionLines:
         def seedFilter(idA, idB, v, l):
             if l.length < SEED_LIMIT_SIZE:
                 return False
-            return (idA not in ghosts) or (idB not in ghosts)
+            return idA not in ghosts or idB not in ghosts
         def ghostId(id):
             return id in ghosts
 
